@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'list_emergency_page.dart';
+import 'map_page.dart';
 
 class BottomNavigationFAB extends StatelessWidget {
   final int currentIndex;
@@ -16,10 +18,35 @@ class BottomNavigationFAB extends StatelessWidget {
           unselectedItemColor: Colors.black,
           backgroundColor: Colors.blueGrey,
           onTap: (index) {
-            // Handle Navigation (Placeholder)
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Navigate to index: $index')),
-            );
+            switch (index) {
+              case 0: // List of Emergencies
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const ListEmergencyPage()),
+                );
+                break;
+              case 1: // Map Page
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MapPage()),
+                );
+                break;
+              // case 2: // Report History
+              //   Navigator.pushReplacement(
+              //     context,
+              //     MaterialPageRoute(builder: (context) => const ReportHistoryPage()),
+              //   );
+              //   break;
+              // case 3: // Profile Page
+              //   Navigator.pushReplacement(
+              //     context,
+              //     MaterialPageRoute(builder: (context) => const ProfilePage()),
+              //   );
+              //   break;
+              default:
+                break;
+            }
           },
           items: const [
             BottomNavigationBarItem(

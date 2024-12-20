@@ -68,7 +68,7 @@ class RegistrationPage extends StatelessWidget {
                           keyboardType: TextInputType.phone),
                       const SizedBox(height: 15),
                       // Address
-                      _buildTextField(label: 'Address per IC'),
+                      _buildTextField(label: 'Address'),
                       const SizedBox(height: 15),
                       // State
                       _buildDropdown(
