@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'list_emergency_page.dart';
 import 'map_page.dart';
+import 'report_history_page.dart';
+import 'my_profile_page.dart';
 
-class BottomNavigationFAB extends StatelessWidget {
+class BottomNavigation extends StatelessWidget {
   final int currentIndex;
 
-  const BottomNavigationFAB({Key? key, required this.currentIndex})
+  const BottomNavigation({Key? key, required this.currentIndex})
       : super(key: key);
 
   @override
@@ -32,18 +34,20 @@ class BottomNavigationFAB extends StatelessWidget {
                   MaterialPageRoute(builder: (context) => const MapPage()),
                 );
                 break;
-              // case 2: // Report History
-              //   Navigator.pushReplacement(
-              //     context,
-              //     MaterialPageRoute(builder: (context) => const ReportHistoryPage()),
-              //   );
-              //   break;
-              // case 3: // Profile Page
-              //   Navigator.pushReplacement(
-              //     context,
-              //     MaterialPageRoute(builder: (context) => const ProfilePage()),
-              //   );
-              //   break;
+              case 2: // Report History
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const ReportHistoryPage()),
+                );
+                break;
+              case 3: // Profile Page
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const MyProfilePage()),
+                );
+                break;
               default:
                 break;
             }

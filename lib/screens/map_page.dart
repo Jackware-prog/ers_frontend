@@ -1,10 +1,12 @@
 import 'dart:async'; // For Completer
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'dart:ui' as ui;
-import 'bottom_nav_fab.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'dart:ui' as ui;
+import 'bottom_nav_bar.dart';
 import 'view_details_page.dart'; // Import the ViewDetailsPage
+import '../utils/emergency_config.dart';
+import '../utils/fab_popup_handler.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({Key? key}) : super(key: key);
@@ -49,16 +51,6 @@ class _MapPageState extends State<MapPage> {
       'status': 'closed',
     },
   ];
-
-  // Configuration Map for Emergency Types
-  final Map<String, Map<String, dynamic>> emergencyConfig = {
-    'Fire': {'icon': FontAwesomeIcons.fire},
-    'Flood': {'icon': FontAwesomeIcons.water},
-    'Road Accident': {'icon': FontAwesomeIcons.carBurst},
-    'Earthquake': {'icon': FontAwesomeIcons.houseCrack},
-    'Tornado': {'icon': FontAwesomeIcons.tornado},
-    'Default': {'icon': FontAwesomeIcons.fontAwesome},
-  };
 
   // Set of Markers
   final Set<Marker> _markers = {};
@@ -201,17 +193,13 @@ class _MapPageState extends State<MapPage> {
             right: 20,
             child: FloatingActionButton(
               backgroundColor: Colors.tealAccent,
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Report Case Pressed')),
-                );
-              },
-              child: const Icon(Icons.add, color: Colors.black),
+              onPressed: () => showEmergencyOptions(context),
+              child: const Icon(FontAwesomeIcons.headset, color: Colors.black),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: const BottomNavigationFAB(currentIndex: 1),
+      bottomNavigationBar: const BottomNavigation(currentIndex: 1),
     );
   }
 }

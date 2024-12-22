@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'view_details_page.dart'; // Import the View Details Page
-import 'bottom_nav_fab.dart';
+import 'bottom_nav_bar.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../utils/fab_popup_handler.dart';
 
 class ListEmergencyPage extends StatelessWidget {
   const ListEmergencyPage({Key? key}) : super(key: key);
@@ -110,15 +112,10 @@ class ListEmergencyPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.tealAccent,
-        onPressed: () {
-          // Handle report new case action
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Report New Case')),
-          );
-        },
-        child: const Icon(Icons.add, color: Colors.black),
+        onPressed: () => showEmergencyOptions(context),
+        child: const Icon(FontAwesomeIcons.headset, color: Colors.black),
       ),
-      bottomNavigationBar: const BottomNavigationFAB(currentIndex: 0),
+      bottomNavigationBar: const BottomNavigation(currentIndex: 0),
     );
   }
 }

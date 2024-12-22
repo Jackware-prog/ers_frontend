@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../utils/emergency_config.dart';
 import 'dart:ui' as ui; // For custom marker rendering
 import 'dart:async';
 import 'package:intl/intl.dart'; // For date formatting
@@ -49,16 +49,6 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
       'closeDateTime': '06:30 PM, 18 Dec 2024',
     },
   ];
-
-  // Configuration Map for Emergency Types
-  final Map<String, Map<String, dynamic>> emergencyConfig = {
-    'Fire': {'icon': FontAwesomeIcons.fire},
-    'Flood': {'icon': FontAwesomeIcons.water},
-    'Road Accident': {'icon': FontAwesomeIcons.carBurst},
-    'Earthquake': {'icon': FontAwesomeIcons.houseCrack},
-    'Tornado': {'icon': FontAwesomeIcons.tornado},
-    'Default': {'icon': FontAwesomeIcons.fontAwesome},
-  };
 
   Marker? customMarker;
   LatLng? center;
