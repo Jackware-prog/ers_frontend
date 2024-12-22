@@ -28,7 +28,7 @@ class _MapPageState extends State<MapPage> {
       'type': 'Fire',
       'state': 'Kuala Lumpur',
       'location': LatLng(3.1390, 101.6869),
-      'address': '123 Main St, Kuala Lumpur',
+      'address': '123 Main St, Kuala Lumpurrr',
       'time': '10:30 AM, 19 Dec 2024',
       'status': 'active',
     },
