@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'screens/login_page.dart'; // Replace with your main page
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'screens/login_page.dart'; // Replace with the actual login page
+import 'screens/map_page.dart'; // Replace with the actual main page
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -9,18 +12,52 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final _secureStorage = FlutterSecureStorage(); // Secure storage instance
+  late FirebaseMessaging _messaging;
+
   @override
   void initState() {
     super.initState();
-    _navigateToHome();
+    initializeFCMListeners(); // Initialize FCM listeners
+    _checkLoginStatus(); // Check login status
   }
 
-  void _navigateToHome() async {
+  // Firebase Cloud Messaging Initialization
+  void initializeFCMListeners() {
+    _messaging = FirebaseMessaging.instance;
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print("Foreground notification received: ${message.notification?.title}");
+      // Optionally, show a dialog or notification
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print("Notification clicked: ${message.notification?.title}");
+      // Optionally, navigate to a specific screen
+    });
+  }
+
+  // Check login status and navigate
+  Future<void> _checkLoginStatus() async {
+    // Simulate splash screen delay
     await Future.delayed(const Duration(seconds: 3));
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => LoginPage()),
-    );
+
+    // Check if the user ID exists in secure storage
+    final userId = await _secureStorage.read(key: 'userId');
+
+    if (userId != null) {
+      // User is logged in, navigate to the main page
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MapPage()),
+      );
+    } else {
+      // User is not logged in, navigate to the login page
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+      );
+    }
   }
 
   @override

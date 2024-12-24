@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'bottom_nav_bar.dart'; // Import the BottomNavigationFAB
 import 'login_page.dart'; // Import the LoginPage
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class MyProfilePage extends StatefulWidget {
   const MyProfilePage({Key? key}) : super(key: key);
@@ -25,6 +26,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
+  final _secureStorage = FlutterSecureStorage();
 
   @override
   void initState() {
@@ -69,12 +71,11 @@ class _MyProfilePageState extends State<MyProfilePage> {
     }
   }
 
-  void logOut() {
-    // Navigate to LoginPage
-    Navigator.pushAndRemoveUntil(
+  Future<void> logOut() async {
+    await _secureStorage.delete(key: 'userId');
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
-      (route) => false, // Removes all previous routes
     );
   }
 

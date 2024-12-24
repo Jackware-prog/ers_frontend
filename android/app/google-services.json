@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "641171165965",
+    "project_id": "erspushnotification",
+    "storage_bucket": "erspushnotification.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:641171165965:android:b9b49e1d3036fe46c95644",
+        "android_client_info": {
+          "package_name": "com.example.erc_frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7B5Kd4azC3SkFSlwxERK8yfkIeFkuOrk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
