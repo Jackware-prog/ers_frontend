@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:erc_frontend/screens/message_reporting_page.dart';
 
 Future<void> showEmergencyOptions(BuildContext context) async {
   final themeColor = Colors.tealAccent;
@@ -65,8 +66,10 @@ Future<void> showEmergencyOptions(BuildContext context) async {
         ),
         TextButton(
           onPressed: () {
-            Navigator.pop(context);
-            Navigator.pushNamed(context, '/message_reporting_page');
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => MessageReportingPage()),
+            );
           },
           child: Text(
             'Message',
