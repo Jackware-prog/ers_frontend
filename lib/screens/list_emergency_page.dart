@@ -1,39 +1,155 @@
 import 'package:flutter/material.dart';
-import 'view_details_page.dart'; // Import the View Details Page
-import 'bottom_nav_bar.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../utils/fab_popup_handler.dart';
+import 'view_details_page.dart';
+import 'bottom_nav_bar.dart';
+import 'package:erc_frontend/utils/fab_popup_handler.dart';
+import 'package:erc_frontend/utils/emergency_config.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/intl.dart';
 
-class ListEmergencyPage extends StatelessWidget {
+class ListEmergencyPage extends StatefulWidget {
   const ListEmergencyPage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    // Sample list of emergencies with IDs
-    final List<Map<String, String>> emergencies = [
-      {
-        'id': '1',
-        'type': 'Fire',
-        'location': 'Kuala Lumpur',
-        'address': '123 Main St, Kuala Lumpur',
-        'time': '10:30 AM, 19 Dec 2024',
-      },
-      {
-        'id': '2',
-        'type': 'Flood',
-        'location': 'Johor Bahru',
-        'address': '45 Jalan ABC, Johor Bahru',
-        'time': '08:15 PM, 18 Dec 2024',
-      },
-      {
-        'id': '3',
-        'type': 'Road Accident',
-        'location': 'Penang',
-        'address': '67 XYZ Street, Penang',
-        'time': '05:50 PM, 18 Dec 2024',
-      },
-    ];
+  _ListEmergencyPageState createState() => _ListEmergencyPageState();
+}
 
+class _ListEmergencyPageState extends State<ListEmergencyPage> {
+  List<Map<String, dynamic>> activeEmergencies = [];
+  List<Map<String, dynamic>> recentEmergencies = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchEmergencies();
+  }
+
+  Future<void> _fetchEmergencies() async {
+    final String backendUrl =
+        dotenv.env['BACKEND_URL'] ?? 'http://localhost:8080';
+    try {
+      final response =
+          await http.get(Uri.parse('$backendUrl/api/reports/recent-report'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+
+        for (var emergency in data) {
+          final address = await _fetchAddress(
+            emergency['latitude'],
+            emergency['longitude'],
+          );
+          emergency['fetchedAddress'] = address; // Add the fetched address
+        }
+
+        setState(() {
+          activeEmergencies = data
+              .where((e) => e['status'] == 'active')
+              .map((e) => e as Map<String, dynamic>)
+              .toList();
+          recentEmergencies = data
+              .where((e) => e['status'] == 'closed')
+              .map((e) => e as Map<String, dynamic>)
+              .toList();
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to fetch emergencies: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching emergencies: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<String> _fetchAddress(double latitude, double longitude) async {
+    final String googleApiKey = dotenv.env['GOOGLE_API_KEY'] ??
+        'AIzaSyATwAelFU5r5A_oYCKM1h9NDItM1DDLXIE';
+    final String url =
+        "https://maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&key=$googleApiKey&language=en";
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['results'] != null && data['results'].isNotEmpty) {
+          return data['results'][0]['formatted_address'] ?? 'Unknown address';
+        }
+      }
+    } catch (e) {
+      print('Error fetching address: $e');
+    }
+
+    return 'Unknown address';
+  }
+
+  String reformatTimestamp(String? timestamp) {
+    try {
+      if (timestamp == null) return "Invalid timestamp";
+      DateTime dateTime = DateTime.parse(timestamp);
+      DateFormat formatter = DateFormat('yyyy MMM dd, hh:mm a');
+      return formatter.format(dateTime);
+    } catch (e) {
+      return "Error formatting timestamp";
+    }
+  }
+
+  Widget buildEmergencyItem(Map<String, dynamic> emergency) {
+    final icon = emergencyConfig[emergency['emergencyType']]?['icon'] ??
+        emergencyConfig['Default']!['icon'];
+
+    return ListTile(
+      leading: FaIcon(
+        icon,
+        color: Colors.tealAccent,
+        size: 30,
+      ),
+      title: Text(
+        emergency['emergencyType'],
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      subtitle: Text(
+        emergency['fetchedAddress'] ?? 'No address',
+        style: const TextStyle(color: Colors.white70),
+      ),
+      trailing: SizedBox(
+        width: 75,
+        child: Center(
+          child: Text(
+            reformatTimestamp(emergency['timestamp']),
+            style: const TextStyle(
+              color: Colors.tealAccent,
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                ViewDetailsPage(emergencyId: emergency['reportid'].toString()),
+          ),
+        );
+      },
+      tileColor: Colors.black87,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -44,72 +160,87 @@ class ListEmergencyPage extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Label for "Recent 3 Days"
-            const Padding(
-              padding: EdgeInsets.only(bottom: 10.0),
-              child: Text(
-                'Recent 3 Days',
-                style: TextStyle(
-                  color: Colors.tealAccent,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            // List of emergencies
-            Expanded(
-              child: ListView.separated(
-                itemCount: emergencies.length,
-                separatorBuilder: (context, index) => const Divider(
-                  color: Colors.white24,
-                  height: 20,
-                ),
-                itemBuilder: (context, index) {
-                  final emergency = emergencies[index];
-                  return ListTile(
-                    tileColor: Colors.black87,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    title: Text(
-                      emergency['type']!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Location: ${emergency['location']}\n'
-                      'Address: ${emergency['address']}\n'
-                      'Date & Time: ${emergency['time']}',
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.tealAccent,
-                    ),
-                    onTap: () {
-                      // Navigate to View Details Page with the selected emergency's ID
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              ViewDetailsPage(emergencyId: emergency['id']!),
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'ACTIVE',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      );
-                    },
-                  );
-                },
+                        Text(
+                          '${activeEmergencies.length} cases',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: activeEmergencies.length,
+                      separatorBuilder: (context, index) => const Divider(
+                        color: Colors.white24,
+                        height: 10,
+                      ),
+                      itemBuilder: (context, index) {
+                        return buildEmergencyItem(activeEmergencies[index]);
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'RECENT',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${recentEmergencies.length} cases',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: recentEmergencies.length,
+                      separatorBuilder: (context, index) => const Divider(
+                        color: Colors.white24,
+                        height: 10,
+                      ),
+                      itemBuilder: (context, index) {
+                        return buildEmergencyItem(recentEmergencies[index]);
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.tealAccent,
         onPressed: () => showEmergencyOptions(context),

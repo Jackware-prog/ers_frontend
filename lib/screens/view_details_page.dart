@@ -1,101 +1,149 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../utils/emergency_config.dart';
-import 'dart:ui' as ui; // For custom marker rendering
-import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart'; // For date formatting
+import 'package:erc_frontend/utils/emergency_config.dart';
+import 'package:erc_frontend/utils/full_screen_media_view.dart';
+import 'dart:ui' as ui; // For custom marker rendering
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ViewDetailsPage extends StatefulWidget {
   final String emergencyId;
+  final bool fromHistory;
 
-  const ViewDetailsPage({Key? key, required this.emergencyId})
-      : super(key: key);
+  const ViewDetailsPage({
+    Key? key,
+    required this.emergencyId,
+    this.fromHistory = false,
+  }) : super(key: key);
 
   @override
   _ViewDetailsPageState createState() => _ViewDetailsPageState();
 }
 
 class _ViewDetailsPageState extends State<ViewDetailsPage> {
-  // Simulated data for emergencies
-  final List<Map<String, dynamic>> emergencies = [
-    {
-      'id': '1',
-      'type': 'Fire',
-      'state': 'Kuala Lumpur',
-      'location': LatLng(3.1390, 101.6869),
-      'address': '123 Main St, Kuala Lumpur',
-      'time': '10:30 AM, 19 Dec 2024',
-      'status': 'active',
-      'closeDateTime': null, // Case not closed
-    },
-    {
-      'id': '2',
-      'type': 'Flood',
-      'state': 'Johor Bahru',
-      'location': LatLng(1.4927, 103.7414),
-      'address': '45 Jalan ABC, Johor Bahru',
-      'time': '08:15 PM, 18 Dec 2024',
-      'status': 'closed',
-      'closeDateTime': '11:15 PM, 18 Dec 2024',
-    },
-    {
-      'id': '3',
-      'type': 'Road Accident',
-      'state': 'Penang',
-      'location': LatLng(5.4164, 100.3327),
-      'address': '67 XYZ Street, Penang',
-      'time': '05:50 PM, 18 Dec 2024',
-      'status': 'closed',
-      'closeDateTime': '06:30 PM, 18 Dec 2024',
-    },
-  ];
-
+  Map<String, dynamic>? emergencyDetails;
   Marker? customMarker;
   LatLng? center;
+  String? address;
+  String? state;
+
+  // Base URL for API
+  final String backendUrl =
+      dotenv.env['BACKEND_URL'] ?? 'http://localhost:8080';
+
+  // Base URL for Media
+  final String mediaBaseUrl =
+      dotenv.env['BACKEND_URL_MEDIA'] ?? 'http://localhost:8080/uploads/';
+
+  // Google Geocoding API Key
+  final String googleApiKey =
+      dotenv.env['GOOGLE_API_KEY'] ?? 'AIzaSyATwAelFU5r5A_oYCKM1h9NDItM1DDLXIE';
 
   @override
   void initState() {
     super.initState();
-    _setupMarker();
+    _fetchEmergencyDetails();
+  }
+
+  Future<void> _fetchEmergencyDetails() async {
+    final url = Uri.parse(
+        '$backendUrl/api/reports/report-detail/${widget.emergencyId}');
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          emergencyDetails = data;
+          center = LatLng(data['latitude'], data['longitude']);
+        });
+
+        // Fetch address from Google API
+        await _fetchAddress(data['latitude'], data['longitude']);
+        _setupMarker();
+      } else {
+        throw Exception('Failed to fetch emergency details');
+      }
+    } catch (e) {
+      print('Error fetching details: $e');
+    }
+  }
+
+  Future<void> _fetchAddress(num latitude, num longitude) async {
+    final url =
+        "https://maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&key=$googleApiKey&language=en";
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data["results"] != null && data["results"].isNotEmpty) {
+          String? streetNumber;
+          String? route;
+          String? sublocality;
+          String? locality;
+          String? adminState;
+
+          for (var component in data["results"][0]["address_components"]) {
+            if (component["types"].contains("street_number")) {
+              streetNumber = component["long_name"];
+            }
+            if (component["types"].contains("route")) {
+              route = component["long_name"];
+            }
+            if (component["types"].contains("sublocality")) {
+              sublocality = component["long_name"];
+            }
+            if (component["types"].contains("locality")) {
+              locality = component["long_name"];
+            }
+            if (component["types"].contains("administrative_area_level_1")) {
+              adminState = component["long_name"];
+            }
+          }
+
+          final streetComponents = [
+            if (streetNumber != null) streetNumber,
+            if (route != null) route,
+            if (sublocality != null) sublocality,
+            if (locality != null) locality,
+          ];
+          setState(() {
+            address = streetComponents.join(", ");
+            state = adminState ?? "Unknown state";
+          });
+        }
+      } else {
+        throw Exception("Failed to fetch address: ${response.statusCode}");
+      }
+    } catch (e) {
+      print('Error fetching address: $e');
+    }
   }
 
   Future<void> _setupMarker() async {
-    // Find the selected emergency
-    final emergency = emergencies.firstWhere(
-      (e) => e['id'] == widget.emergencyId,
-      orElse: () => {
-        'type': 'Unknown',
-        'state': 'Unknown',
-        'location': LatLng(0.0, 0.0),
-        'address': 'Unknown',
-        'time': 'Unknown',
-        'status': 'Unknown',
-        'closeDateTime': null,
-      },
-    );
+    if (emergencyDetails == null) return;
 
-    // Extract type and location
-    final LatLng location = emergency['location'];
-
-    // Create custom marker
-    final markerIcon = await _createCustomMarker(emergency);
+    final markerIcon = await _createCustomMarker(emergencyDetails!);
     setState(() {
       customMarker = Marker(
         markerId: MarkerId(widget.emergencyId),
-        position: location,
+        position: center!,
         icon: markerIcon,
       );
-      center = location;
     });
   }
 
   Future<BitmapDescriptor> _createCustomMarker(
       Map<String, dynamic> emergency) async {
     try {
-      final type = emergency['type'];
+      final type = emergency['emergencyType'];
       final status = emergency['status'];
 
-      // Get the configuration for this type, or use the default
       final config = emergencyConfig[type] ?? emergencyConfig['Default'];
       final icon = config?['icon'] as IconData;
       final color = status == 'active' ? Colors.red : Colors.grey;
@@ -105,7 +153,6 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
         color: color,
       );
     } catch (e) {
-      // Log the error and return a default marker
       print('Error creating custom marker: $e');
       return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
     }
@@ -119,7 +166,6 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
     final canvas = Canvas(pictureRecorder);
     const size = Size(100, 100);
 
-    // Draw circle background
     Paint paint = Paint()..color = color;
     canvas.drawCircle(
       Offset(size.width / 2, size.height / 2),
@@ -127,7 +173,6 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
       paint,
     );
 
-    // Draw the icon
     TextPainter textPainter = TextPainter(
       text: TextSpan(
         text: String.fromCharCode(icon.codePoint),
@@ -157,36 +202,38 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
     return BitmapDescriptor.fromBytes(byteData!.buffer.asUint8List());
   }
 
+  String reformatTimestamp(String? timestamp) {
+    try {
+      if (timestamp == null) return "Invalid timestamp";
+      DateTime dateTime = DateTime.parse(timestamp);
+      DateFormat formatter = DateFormat('yyyy MMM dd, hh:mm a');
+      return formatter.format(dateTime);
+    } catch (e) {
+      return "Error formatting timestamp";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final emergency = emergencies.firstWhere(
-      (e) => e['id'] == widget.emergencyId,
-      orElse: () => {
-        'type': 'Unknown',
-        'state': 'Unknown',
-        'location': LatLng(0.0, 0.0),
-        'address': 'Unknown',
-        'time': 'Unknown',
-        'status': 'Unknown',
-        'closeDateTime': null,
-      },
-    );
-
-    String closeInfo = '';
-    if (emergency['status'] == 'closed' && emergency['closeDateTime'] != null) {
-      DateTime startTime =
-          DateFormat('hh:mm a, dd MMM yyyy').parse(emergency['time']);
-      DateTime closeTime =
-          DateFormat('hh:mm a, dd MMM yyyy').parse(emergency['closeDateTime']);
-      Duration duration = closeTime.difference(startTime);
-      closeInfo =
-          '${emergency['closeDateTime']} (${duration.inMinutes} minutes)';
+    if (emergencyDetails == null) {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: const Text('Details'),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
+
+    final emergency = emergencyDetails!;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text('Details of ${emergency['type']}'),
+        title: Text('ERS ID - ${emergency['reportid']}',
+            style: TextStyle(color: const Color.fromARGB(255, 70, 70, 70))),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.tealAccent),
           onPressed: () {
@@ -195,14 +242,14 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
         ),
       ),
       backgroundColor: Colors.black,
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Emergency Type
             Text(
-              emergency['type'],
+              emergency['emergencyType'],
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -229,37 +276,73 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
                     ),
                     markers: {customMarker!},
                     mapType: MapType.normal,
-                    myLocationEnabled: false,
-                    zoomControlsEnabled: true,
+                    myLocationEnabled: true,
+                    zoomControlsEnabled: false,
                   ),
                 ),
               ),
             const SizedBox(height: 20),
 
-            // State
+            // Address and State
+            const SizedBox(height: 20),
+
+            // Address and State
+            const Text(
+              'Address:',
+              style: TextStyle(fontSize: 12, color: Colors.white54),
+            ),
             Text(
-              'State: ${emergency['state']}',
+              address ?? 'Unknown',
               style: const TextStyle(fontSize: 16, color: Colors.white),
             ),
             const SizedBox(height: 10),
 
-            // Address
-            Text(
-              'Address: ${emergency['address']}',
-              style: const TextStyle(fontSize: 16, color: Colors.white70),
+            const Text(
+              'State:',
+              style: TextStyle(fontSize: 12, color: Colors.white54),
             ),
-            const SizedBox(height: 10),
+            Text(
+              state ?? 'Unknown',
+              style: const TextStyle(fontSize: 16, color: Colors.white),
+            ),
+            const SizedBox(height: 20),
 
             // Reported Date & Time
-            Text(
-              'Reported Date & Time: ${emergency['time']}',
-              style: const TextStyle(fontSize: 16, color: Colors.white70),
+            const Text(
+              'Date & Times:',
+              style: TextStyle(fontSize: 13, color: Colors.white54),
             ),
+            const SizedBox(height: 5),
+            const Text(
+              'Received:',
+              style: TextStyle(fontSize: 12, color: Colors.white54),
+            ),
+            Text(
+              reformatTimestamp(emergency['timestamp']),
+              style: const TextStyle(fontSize: 16, color: Colors.white),
+            ),
+
+            // Case Close Date & Time (if closed)
+            if (emergency['status'] == 'closed') ...[
+              const Text(
+                'Closed:',
+                style: TextStyle(fontSize: 12, color: Colors.white54),
+              ),
+              Text(
+                '${reformatTimestamp(emergency['closeTimestamp'])} (${DateTime.parse(emergency['closeTimestamp']).difference(DateTime.parse(emergency['timestamp'])).inMinutes} Mins)',
+                style: const TextStyle(fontSize: 16, color: Colors.white),
+              ),
+            ],
+
             const SizedBox(height: 10),
 
             // Report Status
+            const Text(
+              'Status:',
+              style: TextStyle(fontSize: 12, color: Colors.white54),
+            ),
             Text(
-              'Status: ${emergency['status'] == 'active' ? 'Active' : 'Closed'}',
+              emergency['status'] == 'active' ? 'Active' : 'Closed',
               style: TextStyle(
                 fontSize: 16,
                 color: emergency['status'] == 'active'
@@ -267,13 +350,81 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
                     : Colors.redAccent,
               ),
             ),
-            const SizedBox(height: 10),
 
-            // Case Close Date & Time (if closed)
-            if (emergency['status'] == 'closed')
-              Text(
-                'Closed Date & Time: $closeInfo',
-                style: const TextStyle(fontSize: 16, color: Colors.white70),
+            if (widget.fromHistory && emergency['reportLogs'] != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  Divider(
+                    color: Colors.grey,
+                    thickness: 1,
+                  ),
+                  const Text(
+                    'Report Logs',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.tealAccent,
+                    ),
+                  ),
+                  ...emergency['reportLogs']
+                      .asMap()
+                      .entries
+                      .map<Widget>((entry) {
+                    final index = entry.key; // Get the index
+                    final log = entry.value; // Get the log object
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 20),
+                        Text(
+                          "Log Detail ${index + 1}", // Use the index
+                          style: const TextStyle(
+                              fontSize: 14, color: Colors.white54),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          log['description'],
+                          style: const TextStyle(
+                              fontSize: 14, color: Colors.white),
+                        ),
+                        const SizedBox(height: 10),
+                        if (log['media'] != null && log['media'].length > 0)
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: log['media'].map<Widget>((media) {
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => FullScreenMediaView(
+                                        mediaUrl:
+                                            '$mediaBaseUrl${media['mediaPath']}',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Image.network(
+                                  '$mediaBaseUrl${media['mediaPath']}',
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        Text(
+                          reformatTimestamp(log['timestamp']),
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.white54),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ],
               ),
           ],
         ),

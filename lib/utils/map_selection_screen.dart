@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class MapSelectionScreen extends StatefulWidget {
   final LatLng? initialLocation;
@@ -19,6 +20,10 @@ class _MapSelectionScreenState extends State<MapSelectionScreen> {
   LatLng _selectedLocation;
   bool _isLoading = true;
   String? _address;
+
+  // Google Geocoding API Key
+  final String googleApiKey =
+      dotenv.env['GOOGLE_API_KEY'] ?? 'AIzaSyATwAelFU5r5A_oYCKM1h9NDItM1DDLXIE';
 
   _MapSelectionScreenState()
       : _selectedLocation = LatLng(3.1390, 101.6869); // Default to Kuala Lumpur
@@ -88,10 +93,8 @@ class _MapSelectionScreenState extends State<MapSelectionScreen> {
   }
 
   Future<void> _reverseGeocodeWithGoogle(LatLng location) async {
-    const String apiKey =
-        "AIzaSyATwAelFU5r5A_oYCKM1h9NDItM1DDLXIE"; // Replace with your API key
     final String url =
-        "https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.latitude},${location.longitude}&key=$apiKey&language=en";
+        "https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.latitude},${location.longitude}&key=$googleApiKey&language=en";
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -146,6 +149,9 @@ class _MapSelectionScreenState extends State<MapSelectionScreen> {
                     target: _selectedLocation,
                     zoom: 14.0,
                   ),
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: true,
+                  zoomControlsEnabled: false,
                   onTap: _onMapTap,
                   markers: {
                     Marker(

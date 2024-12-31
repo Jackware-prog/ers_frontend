@@ -1,10 +1,13 @@
 import 'package:erc_frontend/utils/map_selection_screen.dart';
+import 'package:erc_frontend/screens/report_history_page.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:io';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:erc_frontend/utils/emergency_config.dart'; // Import emergency_config.dart
 
 class MessageReportingPage extends StatefulWidget {
   @override
@@ -14,21 +17,20 @@ class MessageReportingPage extends StatefulWidget {
 class _MessageReportingPageState extends State<MessageReportingPage> {
   final _formKey = GlobalKey<FormState>();
   String? _selectedIncidentType;
-  bool? _reportedToAgency;
+  bool? _isVictim;
   final TextEditingController _locationController = TextEditingController();
   LatLng? _selectedLatLng;
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _levelUnitController = TextEditingController();
   final List<XFile> _mediaList = []; // List to store uploaded media
   final ImagePicker _picker = ImagePicker();
+  final List<String> _incidentTypes = emergencyConfig.keys
+      .where((key) => key != 'Default') // Exclude the "Default" key
+      .toList();
 
-  // Dummy list of incident types
-  final List<String> _incidentTypes = [
-    "Fire Hazard",
-    "Medical Emergency",
-    "Road Accident",
-    "Other",
-  ];
+  // Base URL for API
+  final String backendUrl =
+      dotenv.env['BACKEND_URL'] ?? 'http://localhost:8080';
 
   Future<void> _openMapSelection() async {
     final result = await Navigator.push(
@@ -48,26 +50,6 @@ class _MessageReportingPageState extends State<MessageReportingPage> {
         _selectedLatLng = result["location"];
         _locationController.text = result["address"];
       });
-    }
-  }
-
-  Future<String> _reverseGeocodeWithGoogle(LatLng location) async {
-    const String apiKey =
-        "AIzaSyATwAelFU5r5A_oYCKM1h9NDItM1DDLXIE"; // Replace with your API key
-    final String url =
-        "https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.latitude},${location.longitude}&key=$apiKey&language=en";
-
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data["results"] != null && data["results"].isNotEmpty) {
-        return data["results"][0]["formatted_address"];
-      } else {
-        throw Exception("No address found.");
-      }
-    } else {
-      throw Exception("Failed to fetch address: ${response.statusCode}");
     }
   }
 
@@ -170,34 +152,77 @@ class _MessageReportingPageState extends State<MessageReportingPage> {
     );
   }
 
-  void _submitReport() {
-    if (_formKey.currentState!.validate()) {
-      final reportData = {
-        "incidentType": _selectedIncidentType,
-        "reportedToAgency": _reportedToAgency,
-        "location": _locationController.text,
-        "latitude": _selectedLatLng?.latitude,
-        "longitude": _selectedLatLng?.longitude,
-        "description": _descriptionController.text,
-        "levelUnit": _levelUnitController.text,
-        // Add media processing logic here if needed
-      };
+  final _storage = FlutterSecureStorage();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Report submitted successfully!'),
-          backgroundColor: Colors.green,
-        ),
+  void _submitReport() async {
+    if (!_formKey.currentState!.validate()) {
+      return; // If the form is invalid, do nothing
+    }
+
+    try {
+      // Retrieve the userId from secure storage
+      String? userId = await _storage.read(key: 'userId');
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('User not logged in!')),
+        );
+        return;
+      }
+
+      // Prepare the request
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$backendUrl/api/reports/create'),
       );
 
-      // Clear form after submission
-      _formKey.currentState!.reset();
-      setState(() {
-        _selectedIncidentType = null;
-        _reportedToAgency = null;
-        _selectedLatLng = null;
-        _mediaList.clear();
+      // Add headers (including userId)
+      request.headers.addAll({
+        'userId': userId, // Pass userId in the headers
       });
+
+      // Add text fields
+      request.fields.addAll({
+        'emergencyType': _selectedIncidentType!,
+        'isVictim': _isVictim == true ? 'true' : 'false',
+        'latitude': _selectedLatLng!.latitude.toString(),
+        'longitude': _selectedLatLng!.longitude.toString(),
+        'description': _descriptionController.text,
+        'detailed_address': _levelUnitController.text,
+      });
+
+      // Add media files
+      for (var file in _mediaList) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'mediaFiles',
+          file.path,
+        ));
+      }
+
+      // Send the request
+      var response = await request.send();
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Report submitted successfully!')),
+        );
+
+        // Delay for 1 second before navigating
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ReportHistoryPage()),
+        );
+      } else {
+        // Read response body for more detailed error messages
+        String responseBody = await response.stream.bytesToString();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit report: $responseBody')),
+        );
+      }
+    } catch (e) {
+      // Handle exceptions
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred: $e')),
+      );
     }
   }
 
@@ -260,9 +285,9 @@ class _MessageReportingPageState extends State<MessageReportingPage> {
               ),
               const SizedBox(height: 20),
 
-              // Previously Reported to Other Agency
+              // Who is victim
               const Text(
-                "Previously reported to other agency",
+                "Are you the victims?",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -273,20 +298,20 @@ class _MessageReportingPageState extends State<MessageReportingPage> {
                 children: [
                   Radio<bool>(
                     value: true,
-                    groupValue: _reportedToAgency,
+                    groupValue: _isVictim,
                     onChanged: (value) {
                       setState(() {
-                        _reportedToAgency = value;
+                        _isVictim = value;
                       });
                     },
                   ),
                   const Text("Yes"),
                   Radio<bool>(
                     value: false,
-                    groupValue: _reportedToAgency,
+                    groupValue: _isVictim,
                     onChanged: (value) {
                       setState(() {
-                        _reportedToAgency = value;
+                        _isVictim = value;
                       });
                     },
                   ),

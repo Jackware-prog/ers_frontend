@@ -8,7 +8,7 @@ Future<void> showEmergencyOptions(BuildContext context) async {
   await showDialog(
     context: context,
     builder: (context) => AlertDialog(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color.fromARGB(255, 37, 37, 37),
       title: const Text(
         'Report Emergency',
         style: TextStyle(color: Colors.tealAccent),
@@ -25,7 +25,7 @@ Future<void> showEmergencyOptions(BuildContext context) async {
             final confirm = await showDialog(
               context: context,
               builder: (context) => AlertDialog(
-                backgroundColor: Colors.black,
+                backgroundColor: const Color.fromARGB(255, 37, 37, 37),
                 title: const Text(
                   'Confirm Call',
                   style: TextStyle(color: Colors.tealAccent),
