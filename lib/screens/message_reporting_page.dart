@@ -53,9 +53,31 @@ class _MessageReportingPageState extends State<MessageReportingPage> {
     }
   }
 
+  final int maxFileSizeInBytes = 10 * 1024 * 1024; // 10 MB Max single file size
+
   void _pickMedia(ImageSource source) async {
+    if (_mediaList.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum of 5 media files can be added.')),
+      );
+      return;
+    }
+
     final XFile? file = await _picker.pickImage(source: source);
     if (file != null) {
+      final File fileObject = File(file.path);
+      final int fileSize = await fileObject.length();
+
+      if (fileSize > maxFileSizeInBytes) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'File size exceeds the 10 MB limit. Please select a smaller file.'),
+          ),
+        );
+        return;
+      }
+
       setState(() {
         _mediaList.add(file);
       });

@@ -7,6 +7,7 @@ import 'package:erc_frontend/utils/emergency_config.dart';
 import 'package:erc_frontend/utils/full_screen_media_view.dart';
 import 'dart:ui' as ui; // For custom marker rendering
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'update_emergency_page.dart';
 
 class ViewDetailsPage extends StatefulWidget {
   final String emergencyId;
@@ -424,6 +425,34 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
                       ],
                     );
                   }).toList(),
+                  if (emergency['status'] == 'active')
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => UpdateEmergencyPage(
+                                  emergencyId:
+                                      emergency['reportid'].toString()),
+                            ),
+                          ).then((_) {
+                            // Refresh data after returning from UpdateEmergencyPage
+                            _fetchEmergencyDetails();
+                          });
+                          ;
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.tealAccent,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                        ),
+                        child: const Text('Update Info'),
+                      ),
+                    ),
                 ],
               ),
           ],

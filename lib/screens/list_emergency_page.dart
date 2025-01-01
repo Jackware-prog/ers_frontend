@@ -60,9 +60,12 @@ class _ListEmergencyPageState extends State<ListEmergencyPage> {
       }
     } catch (e) {
       print('Error fetching emergencies: $e');
-      setState(() {
-        isLoading = false;
-      });
+
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 

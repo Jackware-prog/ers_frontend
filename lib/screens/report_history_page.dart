@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'update_emergency_page.dart';
 import 'view_details_page.dart';
 import 'bottom_nav_bar.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:erc_frontend/utils/fab_popup_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/intl.dart';
+import 'package:erc_frontend/utils/emergency_config.dart'; // Import the emergency config
 
 class ReportHistoryPage extends StatefulWidget {
   const ReportHistoryPage({Key? key}) : super(key: key);
@@ -199,10 +199,24 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
               ),
               itemBuilder: (context, index) {
                 final report = reportHistory[index];
+                final emergencyType = report['type'];
+                final iconData = emergencyConfig[emergencyType]?['icon'] ??
+                    emergencyConfig['Default']!['icon'];
+
                 return ListTile(
                   tileColor: Colors.black87,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
+                  ),
+                  leading: SizedBox(
+                    width: 45,
+                    child: Icon(
+                      iconData,
+                      color: report['status'] == 'active'
+                          ? Colors.tealAccent
+                          : Colors.grey,
+                      size: 30,
+                    ),
                   ),
                   title: Text(
                     report['type'],
@@ -217,29 +231,6 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
                     'Date & Time: ${reformatTimestamp(report['time'])}',
                     style: const TextStyle(color: Colors.white70),
                   ),
-                  trailing: report['status'] == 'active'
-                      ? ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => UpdateEmergencyPage(
-                                  emergencyId: report['id'],
-                                  title: report['type'],
-                                ),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.tealAccent,
-                            foregroundColor: Colors.black,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                          ),
-                          child: const Text('Update'),
-                        )
-                      : null,
                   onTap: () {
                     Navigator.push(
                       context,

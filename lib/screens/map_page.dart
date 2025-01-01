@@ -95,7 +95,8 @@ class _MapPageState extends State<MapPage> {
               markerId: MarkerId(emergency['reportid'].toString()),
               position: LatLng(emergency['latitude'], emergency['longitude']),
               infoWindow: InfoWindow(
-                title: '${emergency['emergencyType']} (${reformatTimestamp(emergency['timestamp'])})',
+                title:
+                    '${emergency['emergencyType']} (${reformatTimestamp(emergency['timestamp'])})',
                 snippet: stateAndAddress['address'],
                 onTap: () {
                   // Navigate to ViewDetailsPage
@@ -269,8 +270,8 @@ class _MapPageState extends State<MapPage> {
           ),
           // Floating Action Button
           Positioned(
-            bottom: 60, // Adjust height to make it appear above the bottom bar
-            right: 20,
+            bottom: 16, // Adjust height to make it appear above the bottom bar
+            right: 16,
             child: FloatingActionButton(
               backgroundColor: Colors.tealAccent,
               onPressed: () => showEmergencyOptions(context),
