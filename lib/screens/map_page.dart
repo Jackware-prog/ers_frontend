@@ -92,7 +92,7 @@ class _MapPageState extends State<MapPage> {
 
           _markers.add(
             Marker(
-              markerId: MarkerId(emergency['reportid'].toString()),
+              markerId: MarkerId(emergency['emergencyid'].toString()),
               position: LatLng(emergency['latitude'], emergency['longitude']),
               infoWindow: InfoWindow(
                 title:
@@ -104,7 +104,7 @@ class _MapPageState extends State<MapPage> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ViewDetailsPage(
-                        emergencyId: emergency['reportid'].toString(),
+                        emergencyId: emergency['emergencyid'].toString(),
                       ),
                     ),
                   );
@@ -270,7 +270,7 @@ class _MapPageState extends State<MapPage> {
           ),
           // Floating Action Button
           Positioned(
-            bottom: 16, // Adjust height to make it appear above the bottom bar
+            bottom: 65, // Adjust height to make it appear above the bottom bar
             right: 16,
             child: FloatingActionButton(
               backgroundColor: Colors.tealAccent,

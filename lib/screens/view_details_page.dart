@@ -50,7 +50,7 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
 
   Future<void> _fetchEmergencyDetails() async {
     final url = Uri.parse(
-        '$backendUrl/api/reports/report-detail/${widget.emergencyId}');
+        '$backendUrl/api/reports/emergency-detail/${widget.emergencyId}');
     try {
       final response = await http.get(url);
 
@@ -233,7 +233,7 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text('ERS ID - ${emergency['reportid']}',
+        title: Text('ERS ID - ${emergency['emergencyid']}',
             style: TextStyle(color: const Color.fromARGB(255, 70, 70, 70))),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.tealAccent),
@@ -362,7 +362,7 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
                     thickness: 1,
                   ),
                   const Text(
-                    'Report Logs',
+                    'Emergency Logs',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -435,7 +435,7 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
                             MaterialPageRoute(
                               builder: (context) => UpdateEmergencyPage(
                                   emergencyId:
-                                      emergency['reportid'].toString()),
+                                      emergency['emergencyid'].toString()),
                             ),
                           ).then((_) {
                             // Refresh data after returning from UpdateEmergencyPage

@@ -111,7 +111,7 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
           final address = await fetchAddress(latitude, longitude);
 
           reportList.add({
-            'id': report['reportid'].toString(),
+            'id': report['emergencyid'].toString(),
             'type': report['emergencyType'] ?? 'Unknown',
             'state': address['state'] ?? 'Unknown',
             'location': address['street'] ?? 'Unknown',

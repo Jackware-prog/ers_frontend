@@ -145,7 +145,7 @@ class _UpdateEmergencyPageState extends State<UpdateEmergencyPage> {
 
   void _submitUpdate() async {
     final String url = '$backendUrl/api/reports/update-reportlog';
-    final String reportId = widget.emergencyId;
+    final String emergencyId = widget.emergencyId;
     final String description = _descriptionController.text;
     final String detailedAddress = _detailedAddressController.text;
 
@@ -161,7 +161,7 @@ class _UpdateEmergencyPageState extends State<UpdateEmergencyPage> {
     try {
       // Create a MultipartRequest to send media files and form data
       var request = http.MultipartRequest('POST', Uri.parse(url));
-      request.fields['reportId'] = reportId;
+      request.fields['emergencyId'] = emergencyId;
       request.fields['description'] = description;
       request.fields['detailed_address'] = detailedAddress;
 

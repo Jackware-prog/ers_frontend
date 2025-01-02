@@ -139,8 +139,8 @@ class _ListEmergencyPageState extends State<ListEmergencyPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                ViewDetailsPage(emergencyId: emergency['reportid'].toString()),
+            builder: (context) => ViewDetailsPage(
+                emergencyId: emergency['emergencyid'].toString()),
           ),
         );
       },

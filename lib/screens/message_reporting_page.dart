@@ -229,7 +229,7 @@ class _MessageReportingPageState extends State<MessageReportingPage> {
         );
 
         // Delay for 1 second before navigating
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => ReportHistoryPage()),
         );

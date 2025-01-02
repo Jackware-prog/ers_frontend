@@ -66,6 +66,7 @@ Future<void> showEmergencyOptions(BuildContext context) async {
         ),
         TextButton(
           onPressed: () {
+            Navigator.pop(context, false);
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => MessageReportingPage()),
