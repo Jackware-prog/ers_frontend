@@ -20,44 +20,10 @@ Future<void> showEmergencyOptions(BuildContext context) async {
       actions: [
         TextButton(
           onPressed: () async {
-            Navigator.pop(context);
-            // Double Confirmation for Call
-            final confirm = await showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                backgroundColor: const Color.fromARGB(255, 37, 37, 37),
-                title: const Text(
-                  'Confirm Call',
-                  style: TextStyle(color: Colors.tealAccent),
-                ),
-                content: const Text(
-                  'Are you sure you want to call emergency services?',
-                  style: TextStyle(color: Colors.white70),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(color: themeColor),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: Text(
-                      'Confirm',
-                      style: TextStyle(color: themeColor),
-                    ),
-                  ),
-                ],
-              ),
+            Navigator.pop(context, false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Coming Soon...')),
             );
-
-            if (confirm == true) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Calling emergency services...')),
-              );
-            }
           },
           child: Text(
             'Call',

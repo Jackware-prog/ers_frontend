@@ -453,6 +453,62 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
                         child: const Text('Update Info'),
                       ),
                     ),
+                  // New section for handled information and caseLogs
+                  if (emergency['isHandled'] == true) ...[
+                    const SizedBox(height: 20),
+                    Divider(color: Colors.grey, thickness: 1),
+                    Text(
+                      'Handled by: ${emergency['adminName']} on ${reformatTimestamp(emergency['caseTimestamp'])}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Action Taken:',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.tealAccent,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (emergency['caseLogs'] != null &&
+                        emergency['caseLogs'].isNotEmpty)
+                      ...emergency['caseLogs'].map<Widget>((log) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              log['actionTaken'] ?? 'No action specified',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              reformatTimestamp(log['timestamp']),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white54,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                        );
+                      }).toList()
+                    else
+                      const Text(
+                        'No action taken',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.white70,
+                        ),
+                      ),
+                  ],
                 ],
               ),
           ],
