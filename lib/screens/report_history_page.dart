@@ -117,6 +117,7 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
             'location': address['street'] ?? 'Unknown',
             'time': report['timestamp'] ?? 'Unknown',
             'status': report['status'] ?? 'Unknown',
+            'is_false_message': report['isFalseMessage'] ?? false,
           });
         }
 
@@ -212,9 +213,11 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
                     width: 45,
                     child: Icon(
                       iconData,
-                      color: report['status'] == 'active'
-                          ? Colors.tealAccent
-                          : Colors.grey,
+                      color: report['is_false_message']
+                          ? Colors.red
+                          : report['status'] == 'active'
+                              ? Colors.tealAccent
+                              : Colors.grey,
                       size: 30,
                     ),
                   ),
@@ -225,12 +228,31 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  subtitle: Text(
-                    'State: ${report['state']}\n'
-                    'Location: ${report['location']}\n'
-                    'Date & Time: ${reformatTimestamp(report['time'])}',
-                    style: const TextStyle(color: Colors.white70),
-                  ),
+                  subtitle: report['is_false_message']
+                      ? RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text:
+                                    'Identified False Message, please report again with sufficient evidences.\n\n',
+                                style: const TextStyle(
+                                    color: Colors.white70), // Default style
+                              ),
+                              TextSpan(
+                                text:
+                                    'Warning: Legal action may be taken for submitting false reports',
+                                style: const TextStyle(
+                                    color: Colors.red), // Red color for warning
+                              ),
+                            ],
+                          ),
+                        )
+                      : Text(
+                          ('State: ${report['state']}\n'
+                              'Location: ${report['location']}\n'
+                              'Date & Time: ${reformatTimestamp(report['time'])}'),
+                          style: const TextStyle(color: Colors.white70),
+                        ),
                   onTap: () {
                     Navigator.push(
                       context,

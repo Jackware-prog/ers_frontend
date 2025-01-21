@@ -45,7 +45,6 @@ class _SplashScreenState extends State<SplashScreen> {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print("Foreground notification received: ${message.notification?.title}");
 
-      // Display a local notification
       RemoteNotification? notification = message.notification;
       AndroidNotification? android = message.notification?.android;
 
@@ -54,7 +53,7 @@ class _SplashScreenState extends State<SplashScreen> {
           notification.hashCode,
           notification.title,
           notification.body,
-          const NotificationDetails(
+          NotificationDetails(
             android: AndroidNotificationDetails(
               'high_importance_channel', // Channel ID
               'High Importance Notifications', // Channel Name
@@ -62,7 +61,14 @@ class _SplashScreenState extends State<SplashScreen> {
                   'This channel is used for important notifications.',
               importance: Importance.high,
               priority: Priority.high,
-              icon: '@mipmap/ic_launcher',
+              styleInformation: BigTextStyleInformation(
+                notification.body ?? '', // Expanded text
+                htmlFormatBigText: true,
+                contentTitle:
+                    notification.title ?? '', // Title for expanded view
+                htmlFormatContentTitle: true,
+              ),
+              icon: '@mipmap/launcher_icon',
             ),
           ),
         );
@@ -71,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print("Notification clicked: ${message.notification?.title}");
-      // Navigate to a specific screen if needed
+      // Handle click to navigate to a specific screen
     });
   }
 

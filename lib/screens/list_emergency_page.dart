@@ -8,6 +8,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/intl.dart';
+import 'package:erc_frontend/utils/real_time_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:async';
 
 class ListEmergencyPage extends StatefulWidget {
   const ListEmergencyPage({Key? key}) : super(key: key);
@@ -20,11 +23,28 @@ class _ListEmergencyPageState extends State<ListEmergencyPage> {
   List<Map<String, dynamic>> activeEmergencies = [];
   List<Map<String, dynamic>> recentEmergencies = [];
   bool isLoading = true;
+  late StreamSubscription emergencySubscription;
 
   @override
   void initState() {
     super.initState();
+
+    // Listen for emergency updates
+    emergencySubscription = RealTimeService().emergencyStream.listen((data) {
+      if (data['event'] == PostgresChangeEvent.update &&
+          data['is_publish'] == true) {
+        _fetchEmergencies();
+      }
+    });
+
     _fetchEmergencies();
+  }
+
+  @override
+  void dispose() {
+    // Cancel the subscriptions when the widget is disposed
+    emergencySubscription.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchEmergencies() async {

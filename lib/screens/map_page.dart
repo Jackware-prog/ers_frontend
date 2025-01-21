@@ -12,6 +12,9 @@ import 'package:location/location.dart'; // Import location package
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http; // Import HTTP package
 import 'package:intl/intl.dart';
+import 'package:erc_frontend/utils/real_time_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:async';
 
 class MapPage extends StatefulWidget {
   const MapPage({Key? key}) : super(key: key);
@@ -29,12 +32,29 @@ class _MapPageState extends State<MapPage> {
       dotenv.env['BACKEND_URL'] ?? 'http://localhost:8080';
   final String googleApiKey =
       dotenv.env['GOOGLE_API_KEY'] ?? 'AIzaSyATwAelFU5r5A_oYCKM1h9NDItM1DDLXIE';
+  late StreamSubscription emergencySubscription;
 
   @override
   void initState() {
     super.initState();
     _getUserLocation(); // Fetch user's current location
     _fetchEmergencies(); // Fetch recent emergencies
+
+    // Listen for emergency updates
+    emergencySubscription = RealTimeService().emergencyStream.listen((data) {
+      print(data);
+      if (data['event'] == PostgresChangeEvent.update &&
+          data['is_publish'] == true) {
+        _fetchEmergencies();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    // Cancel the subscriptions when the widget is disposed
+    emergencySubscription.cancel();
+    super.dispose();
   }
 
   Future<void> _getUserLocation() async {

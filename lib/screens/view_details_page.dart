@@ -8,6 +8,9 @@ import 'package:erc_frontend/utils/full_screen_media_view.dart';
 import 'dart:ui' as ui; // For custom marker rendering
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'update_emergency_page.dart';
+import 'package:erc_frontend/utils/real_time_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:async';
 
 class ViewDetailsPage extends StatefulWidget {
   final String emergencyId;
@@ -29,6 +32,8 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
   LatLng? center;
   String? address;
   String? state;
+  late StreamSubscription caseHandlingSubscription;
+  late StreamSubscription caseLogSubscription;
 
   // Base URL for API
   final String backendUrl =
@@ -46,6 +51,21 @@ class _ViewDetailsPageState extends State<ViewDetailsPage> {
   void initState() {
     super.initState();
     _fetchEmergencyDetails();
+
+    caseLogSubscription = RealTimeService().caseLogStream.listen((data) async {
+      if (data['event'] == PostgresChangeEvent.insert) {
+        _fetchEmergencyDetails();
+      }
+    });
+
+    caseHandlingSubscription =
+        RealTimeService().caseHandlingStream.listen((data) async {
+      if (data['event'] == PostgresChangeEvent.insert) {
+        if (data['emergencyid'].toString() == widget.emergencyId) {
+          _fetchEmergencyDetails();
+        }
+      }
+    });
   }
 
   Future<void> _fetchEmergencyDetails() async {
